@@ -1,0 +1,219 @@
+import React, { useEffect, useRef } from "react";
+// If you're using plain JavaScript files (not TypeScript), change the import statement:
+// import { useEffect, useRef } from "react";
+
+export function VozesMobile(props) {
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        // --- 1. Dynamically Inject P5.js library ---
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js";
+        script.async = true;
+
+        const sketch = (p) => {
+            let svgData;
+            let spots = [];
+            let isOrigin = false;
+            
+            // --- Spot Class (Particle Physics) ---
+            class Spot {
+                constructor(x, y) {
+                    this.origin = p.createVector(x, y);
+                    this.pos = p.createVector(
+                        p.random(p.width),
+                        p.random(p.height)
+                    );
+                    this.acc = p.createVector(0, 0);
+                    this.vel = p.createVector(0, 0);
+                    this.maxforce = 8.0;
+                }
+
+                applyForce(force) {
+                    let limited = force.limit(this.maxforce);
+                    this.acc.add(limited);
+                }
+
+                checkEdges() {
+                    if (this.pos.y <= 0 || this.pos.y >= p.height)
+                        this.vel.y *= -1;
+                    if (this.pos.x <= 0 || this.pos.x >= p.width)
+                        this.vel.x *= -1;
+                }
+
+                run() {
+                    this.vel.add(this.acc);
+                    this.pos.add(this.vel);
+                    this.acc.mult(0);
+                }
+
+                diffuse() {
+                    const randomed = p.createVector(
+                        p.random(-0.5, 0.5),
+                        p.random(-0.5, 0.5)
+                    );
+                    this.applyForce(randomed);
+                }
+
+                originalize() {
+                    const desired = p5.Vector.sub(this.origin, this.pos);
+                    const d = desired.mag();
+                    if (d < 100) {
+                        const m = p.map(d, 0, 100, 0, this.maxforce);
+                        desired.setMag(m);
+                    } else {
+                        desired.setMag(this.maxforce);
+                    }
+                    const steer = p5.Vector.sub(desired, this.vel);
+                    this.applyForce(steer);
+                }
+
+                show() {
+                    p.stroke("#4A75B2");
+                    p.strokeWeight(2);
+                    p.point(this.pos.x, this.pos.y);
+                }
+            }
+
+            // --- Helper: Find all paths recursively (handles groups <g>) ---
+            function getAllPaths(node) {
+                let paths = [];
+                if (node.getName() === 'path') {
+                    paths.push(node);
+                }
+                const children = node.getChildren();
+                if (children && children.length > 0) {
+                    for (let child of children) {
+                        paths = paths.concat(getAllPaths(child));
+                    }
+                }
+                return paths;
+            }
+
+            // --- P5 Preload: Load SVG XML ---
+            p.preload = () => {
+                svgData = p.loadXML(
+                    "https://raw.githubusercontent.com/lugarciaalbuq/Vozes-da-Feira/refs/heads/main/VdF_350px.svg"
+                );
+            }
+
+            // --- P5 Setup: Initialize Canvas and Particles (Shape Fill Logic) ---
+            p.setup = () => {
+                // Get dimensions from the ref container
+                const containerWidth = containerRef.current.clientWidth;
+                const containerHeight = containerRef.current.clientHeight;
+                p.createCanvas(containerWidth, containerHeight);
+
+                let collectedPoints = [];
+                const paths = getAllPaths(svgData);
+                
+                // We sample the first path found.
+                const pathXML = paths[0]; 
+                
+                if (!pathXML) return;
+
+                const d = pathXML.getString("d");
+                if (d) {
+                    // Create virtual SVG environment for geometry calculation
+                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    pathEl.setAttribute("d", d);
+                    svg.appendChild(pathEl);
+                    
+                    // Add to DOM temporarily to allow getBBox() to work
+                    document.body.appendChild(svg);
+
+                    // 1. Get the SVG's bounding box (native coordinates)
+                    const bbox = pathEl.getBBox();
+                    const minX = bbox.x;
+                    const minY = bbox.y;
+                    const svgWidth = bbox.width;
+                    
+                    // --- SCALING LOGIC: Set desired width to 350px ---
+                    const targetWidth = 350; // Target width
+                    const scaleFactor = targetWidth / svgWidth; 
+                    // ---------------------------------------------------
+
+                    // 2. Define density for the fill
+                    const density = 0.05; 
+                    
+                    // 3. Loop through a grid covering the original bounding box
+                    for (let x = minX; x < minX + bbox.width; x += density / scaleFactor) {
+                        for (let y = minY; y < minY + bbox.height; y += density / scaleFactor) {
+                            
+                            // 4. Check if the current point (x, y) is inside the shape
+                            const point = svg.createSVGPoint();
+                            point.x = x;
+                            point.y = y;
+                            
+                            if (pathEl.isPointInFill(point)) {
+                                collectedPoints.push({ x: x, y: y });
+                            }
+                        }
+                    }
+
+                    // Remove the temporary SVG element
+                    document.body.removeChild(svg);
+
+                    // --- 5. Apply Scale, Normalization, and Centering ---
+                    let scaledTotalWidth = bbox.width * scaleFactor;
+                    let scaledTotalHeight = bbox.height * scaleFactor;
+
+                    // Center offsets for the scaled shape
+                    let offsetX = (p.width - scaledTotalWidth) / 2;
+                    let offsetY = (p.height - scaledTotalHeight) / 2; 
+
+                    // Create Spot objects (particles)
+                    for (const pt of collectedPoints) {
+                        // Normalize (subtract minX/minY) -> Scale -> Translate (add offset)
+                        const finalX = ((pt.x - minX) * scaleFactor) + offsetX;
+                        const finalY = ((pt.y - minY) * scaleFactor) + offsetY;
+                        spots.push(new Spot(finalX, finalY));
+                    }
+                }
+            }
+
+            // --- P5 Draw Loop: Animation ---
+            p.draw = () => {
+                p.background(255); // White background
+                for (const s of spots) {
+                    isOrigin ? s.originalize() : s.diffuse();
+                    s.checkEdges();
+                    s.run();
+                    s.show();
+                }
+            }
+
+            // --- P5 Interaction: Mouse Click to switch mode ---
+            p.mouseClicked = () => {
+                isOrigin = !isOrigin;
+            }
+
+            // --- P5 Resize ---
+            p.windowResized = () => {
+                 const containerWidth = containerRef.current.clientWidth;
+                 const containerHeight = containerRef.current.clientHeight;
+                 p.resizeCanvas(containerWidth, containerHeight);
+            }
+        }
+
+        // --- Execute P5 Sketch ---
+        script.onload = () => {
+            if (containerRef.current && window.p5) {
+                new window.p5(sketch, containerRef.current);
+            }
+        }
+
+        document.body.appendChild(script);
+
+        // Cleanup function for React
+        return () => {
+            document.body.removeChild(script);
+            // Optionally, destroy the P5 instance here if necessary
+            // e.g., if (p5Instance) p5Instance.remove();
+        };
+    }, []);
+
+    // Standard React render: The div that holds the P5 canvas
+    return <div ref={containerRef} style={{ width: "100%", height: "100%", overflow: "hidden" }} />;
+}
