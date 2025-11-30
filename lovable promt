@@ -1,0 +1,51 @@
+Recreate the website 'https: / / vozesdafeira. framer.website/ single, mobile-first React component using Tailwind CSS.
+**1. Overall Goal & Aesthetics:**
+* **Format:** Single React component ( App
+function).
+* **Design:** Fully responsive, mobile-first design, matching the clean layout and structure seen on the reference site
+(e.g., stacked sections, full-width images, blue accent bars) •
+**Primary Accent Color:** Deep Blue
+(#4A75B2) • Use this color for titles, call-to-action text, and accent backgrounds.
+* **Language:** All content must be in Portuguese, using the specific titles and mock text provided below.
+**2. Crucial Feature: Interactive P5.js
+Header Animation**
+The header must feature a dynamic P5.js canvas. The animation should display a particle system with the following behavior:
+* **Initial State:** Particles are randomly diffused across the canvas.
+* **Interaction:** Upon clicking or tapping the canvas, the particles should smoothly *re-organize* to form a recognizable shape (e.g., the title text
+'Vozes da Feira' or a simple logo shape) •
+* **Toggle:** Subsequent clicks/taps should switch the particles back and forth between the organized shape and the diffused random state.
+* **Implementation:** The P5.js library must be loaded externally via a <script>
+tag, and the
+managed within a React ssebtecto
+should be hook.
+The canvas height should be approximately
+- 40vh•
+**3. Required Content Sections
+(In Order) :**
+Section Title | Content Description |
+Key Styles |
+**Header**
+The P5.js animation
+canvas. Overlayed with the main title
+**"Vozes da Feira"** and a prompt
+**(clique na tela)**. Canvas background is white. Title text is Deep Blue. |
+| **Featured Story** | A full-width image
+followed by a deep blue info bar. Mock content: **ELTON** (large font),
+**Frutas
+e verduras** (category), **"o teu maior tesouro são os teus clientes, se você enganar eles você perde."** (quote).
+Followed by a detailed paragraph of mock text about Elton. | Info bar background is Deep Blue (*#4A75B2')• Text is white.
+**Quem Somos** Title: **QUEM SOMOS**,
+Subtitle: **Projeto Vozes da Feira**.
+Includes a mock image of two people holding pastries. Followed by a paragraph describing the project's mission in Portuguese. Titles in Deep Blue. |
+| **Fórum (Community)** | Title:
+**FÓRUM**, Subtitle: **Comunidade Vozes da Feira**. Implement two mock forum posts/comments cards with rounded corners usernames (e.g•,
+use naget be-gers, fertura a mock
+"amanda ferreiraa) and interaction counts (e.g•,
+34 curtidas"). | Cards
+should be visually separated and mobile-friendly. |
+**4. Utility Elements: **
+* Include a simple top-right navigation menu/toggle with links for **Histórias**,
+**Quem Somos**, and **Fórum**.
+* Include a footer element mimicking a mobile browser URI bar at the bottom, displaying vozesdafeira. framer website.
+The final output must be a single, complete, and runnable React file that
+looks professional and feels native on a mobile screen.
